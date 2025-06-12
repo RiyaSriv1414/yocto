@@ -53,7 +53,7 @@ pipeline {
                     echo "Cloning Poky repository..."
 
                     dir("${YOCTO_WORKSPACE}") {
-                        git branch: 'kirkstone', url: 'https://git.yoctoproject.org/git/poky'
+                        git branch: 'kirkstone', url: 'https://github.com/RiyaSriv1414/yocto.git'
                     } 
                     dir("${BASE_PATH}/${NEW_DIR}") { 
                         echo "Cloning meta-myhello layer..."
