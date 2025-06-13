@@ -136,6 +136,7 @@ pipeline {
     post {
         always {
             echo "Yocto build pipeline finished."
+            cleanWs()
         }
         success {
             echo "Yocto image build SUCCEEDED!"
