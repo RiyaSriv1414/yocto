@@ -35,12 +35,12 @@ pipeline {
                     echo "Preparing Yocto workspace at ${YOCTO_WORKSPACE}"
                     sh """
                         echo "${YOCTO_WORKSPACE}"
-                        sudo chown -R jenkins:jenkins /mnt/build
-                        sudo chmod 755 /mnt/build
+                        sudo chown -R jenkins:jenkins /mnt/build/
+                        sudo chmod 755 /mnt/build/
                         mkdir -p /mnt/efs/fs/yocto-dl 
                         mkdir -p /mnt/efs/fs/yocto-sstate
-                        sudo chown -R jenkins:jenkins /mnt/efs/fs/yocto-dl
-                        sudo chown -R jenkins:jenkins /mnt/efs/fs/yocto-sstate
+                        sudo chown -R jenkins:jenkins /mnt/efs/fs/yocto-dl/
+                        sudo chown -R jenkins:jenkins /mnt/efs/fs/yocto-sstate/
                         sudo rm -rf "${BUILD_DIR}"
                     """
                 }
