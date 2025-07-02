@@ -106,32 +106,31 @@ pipeline {
         script {
             echo "Starting BitBake for image: ${IMAGE}..."
             dir("${YOCTO_WORKSPACE}") {
-                sh """
+                sh '''
                     mkdir -p metrics
 
                     bash -c '
                         pwd
                         source oe-init-build-env 
-                        sudo chown -R \$USER:\$USER .
                         bitbake -c cleansstate perl-native
                         bitbake -c cleansstate openssl
-                        bitbake \${IMAGE}
+                        bitbake ${IMAGE}
                     ' &
-                    BUILD_PID=\\\$!
-                    echo "Build PID: \\$BUILD_PID"
+                    BUILD_PID=$!
+                    echo "Build PID: $BUILD_PID"
                     # Start psrecord on build PID, logging every 5 seconds
-                    psrecord \\$BUILD_PID --log metrics/yocto_usage.csv --interval 5 --include-children &
-                    PSRECORD_PID=\\\$!
+                    psrecord $BUILD_PID --log metrics/yocto_usage.csv --interval 5 --include-children &
+                    PSRECORD_PID=$!
 
                     # Wait for the build to finish
-                    wait \\$BUILD_PID
+                    wait $BUILD_PID
 
                     # After build ends, stop psrecord
-                    kill \\$PSRECORD_PID || true
+                    kill $PSRECORD_PID || true
 
                     echo "Build complete. Metrics saved to metrics/yocto_usage.csv"
-                    mv metrics/yocto_usage.csv \${WORKSPACE}/yocto_usage.csv
-                """
+                    mv metrics/yocto_usage.csv ${WORKSPACE}/yocto_usage.csv
+                '''
             }
         }
     }
