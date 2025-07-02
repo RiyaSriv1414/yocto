@@ -130,7 +130,7 @@ pipeline {
                             kill $PSRECORD_PID || true
 
                             echo "Build complete. Metrics saved to metrics/yocto_usage.csv"
-                            mv metrics/yocto_usage.csv ../../workspace/yocto_usage.csv
+                            mv metrics/yocto_usage.csv ${WORKSPACE}/yocto_usage.csv
                         '''
                     }
                 }
