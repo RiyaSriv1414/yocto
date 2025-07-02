@@ -131,8 +131,8 @@ pipeline {
                             '
                             # Stop the background logging
                             kill $MONITOR_PID
-                            mkdir -p ../../metrics
-                            mv metrics/yocto_usage.csv ../../metrics/yocto_usage.csv
+                            sudo mkdir -p ../../metrics
+                            sudo mv metrics/yocto_usage.csv ../../metrics/yocto_usage.csv
                         '''
                     }
                 }
