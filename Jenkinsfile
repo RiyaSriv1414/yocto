@@ -131,6 +131,8 @@ pipeline {
                             '
                             # Stop the background logging
                             kill $MONITOR_PID
+                            mkdir -p ../../metrics
+                            mv metrics/yocto_usage.csv ../../metrics/yocto_usage.csv
                         '''
                     }
                 }
@@ -152,7 +154,7 @@ pipeline {
     post {
         always {
             // Archive the CSV
-            archiveArtifacts artifacts: '/mnt/build/poky/metrics/yocto_usage.csv', fingerprint: true
+            archiveArtifacts artifacts: 'metrics/yocto_usage.csv', fingerprint: true
 
             // Plot CPU
             plot csvFileName: 'yocto_cpu_plot.csv',
@@ -160,7 +162,7 @@ pipeline {
             title: 'Yocto CPU Usage',
             style: 'line',
             yaxis: 'CPU (%)',
-            csvSeries: [[file: '/mnt/build/poky/metrics/yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
+            csvSeries: [[file: 'metrics/yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
 
             // Plot Memory
             plot csvFileName: 'yocto_mem_plot.csv',
@@ -168,7 +170,7 @@ pipeline {
              title: 'Yocto Memory Usage',
              style: 'line',
              yaxis: 'Memory (%)',
-             csvSeries: [[file: '/mnt/build/poky/metrics/yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
+             csvSeries: [[file: 'metrics/yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
             cleanWs()
         }
         success {
