@@ -70,7 +70,6 @@ pipeline {
 
                     dir("${YOCTO_WORKSPACE}") {
                         sh '''
-                            echo "$(date),$(ps -p $$ -o %cpu=,%mem=)" >> yocto_build.csv
                             bash -c '
                                 pwd
                                 source oe-init-build-env 
@@ -78,7 +77,6 @@ pipeline {
                         '''
                     }
                     sh """
-                        echo "\\\$(date),\\\$(ps -p \\\$\$ -o %cpu=,%mem=)" >> yocto_os.csv
                         echo "# Setting MACHINE" >> ${BUILD_DIR}/conf/local.conf
                         echo 'MACHINE = "${MACHINE}"' >> ${BUILD_DIR}/conf/local.conf
 
@@ -109,6 +107,20 @@ pipeline {
                     echo "Starting BitBake for image: ${IMAGE}..."
                     dir("${YOCTO_WORKSPACE}") {
                         sh '''
+                            mkdir -p metrics
+                            echo "Time,CPU,MEM" > metrics/yocto_usage.csv
+
+                    # Start background resource logging
+                            (
+                                while true; do
+                                CPU=$(ps -p $$ -o %cpu= | tail -1 | tr -d ' ')
+                                MEM=$(ps -p $$ -o %mem= | tail -1 | tr -d ' ')
+                                echo "$(date +%H:%M:%S),$CPU,$MEM" >> metrics/yocto_usage.csv
+                                sleep 5
+                                done
+                            ) &
+                            MONITOR_PID=$!
+                            
                             bash -c '
                                 pwd
                                 source oe-init-build-env 
@@ -117,6 +129,8 @@ pipeline {
                                 bitbake -c cleansstate openssl
                                 bitbake ${IMAGE}
                             '
+                            # Stop the background logging
+                            kill $MONITOR_PID
                         '''
                     }
                 }
@@ -137,8 +151,24 @@ pipeline {
 
     post {
         always {
-            echo "Yocto build pipeline finished."
-            archiveArtifacts artifacts: '*.csv'
+            // Archive the CSV
+            archiveArtifacts artifacts: 'metrics/yocto_usage.csv', fingerprint: true
+
+            // Plot CPU
+            plot csvFileName: 'yocto_cpu_plot.csv',
+            group: 'Yocto Build Metrics',
+            title: 'Yocto CPU Usage',
+            style: 'line',
+            yaxis: 'CPU (%)',
+            csvSeries: [[file: 'metrics/yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
+
+            // Plot Memory
+            plot csvFileName: 'yocto_mem_plot.csv',
+            group: 'Yocto Build Metrics',
+             title: 'Yocto Memory Usage',
+             style: 'line',
+             yaxis: 'Memory (%)',
+             csvSeries: [[file: 'metrics/yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
             cleanWs()
         }
         success {
