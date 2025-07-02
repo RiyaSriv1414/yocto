@@ -70,6 +70,7 @@ pipeline {
 
                     dir("${YOCTO_WORKSPACE}") {
                         sh '''
+                            echo "$(date),$(ps -p $$ -o %cpu=,%mem=)" >> yocto_build.csv
                             bash -c '
                                 pwd
                                 source oe-init-build-env 
@@ -77,6 +78,7 @@ pipeline {
                         '''
                     }
                     sh """
+                        echo "$(date),$(ps -p $$ -o %cpu=,%mem=)" >> yocto_os.csv
                         echo "# Setting MACHINE" >> ${BUILD_DIR}/conf/local.conf
                         echo 'MACHINE = "${MACHINE}"' >> ${BUILD_DIR}/conf/local.conf
 
@@ -136,6 +138,7 @@ pipeline {
     post {
         always {
             echo "Yocto build pipeline finished."
+            archiveArtifacts artifacts: '*.csv'
             cleanWs()
         }
         success {
