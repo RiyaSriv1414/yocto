@@ -108,18 +108,6 @@ pipeline {
                     dir("${YOCTO_WORKSPACE}") {
                         sh '''
                             mkdir -p metrics
-                            echo "Time,CPU,MEM" > metrics/yocto_usage.csv
-
-                    # Start background resource logging
-                            (
-                                while true; do
-                                CPU=$(ps -p $$ -o %cpu= | tail -1 | tr -d ' ')
-                                MEM=$(ps -p $$ -o %mem= | tail -1 | tr -d ' ')
-                                echo "$(date +%H:%M:%S),$CPU,$MEM" >> metrics/yocto_usage.csv
-                                sleep 5
-                                done
-                            ) &
-                            MONITOR_PID=$!
                             
                             bash -c '
                                 pwd
@@ -128,11 +116,21 @@ pipeline {
                                 bitbake -c cleansstate perl-native
                                 bitbake -c cleansstate openssl
                                 bitbake ${IMAGE}
-                            '
-                            # Stop the background logging
-                            kill $MONITOR_PID
-                            sudo mkdir -p ../../metrics
-                            sudo mv metrics/yocto_usage.csv ../../metrics/yocto_usage.csv
+                            ' &
+                            BUILD_PID=$!
+                            echo "Build PID: $BUILD_PID"
+                             # Start psrecord on build PID, logging every 5 seconds
+                            psrecord $BUILD_PID --log metrics/yocto_usage.csv --interval 5 &
+                            PSRECORD_PID=$!
+
+                            # Wait for the build to finish
+                            wait $BUILD_PID
+
+                            # After build ends, stop psrecord
+                            kill $PSRECORD_PID || true
+
+                            echo "Build complete. Metrics saved to metrics/yocto_usage.csv"
+                            mv metrics/yocto_usage.csv ../../workspace/yocto_usage.csv
                         '''
                     }
                 }
@@ -154,7 +152,7 @@ pipeline {
     post {
         always {
             // Archive the CSV
-            archiveArtifacts artifacts: 'metrics/yocto_usage.csv', fingerprint: true
+            archiveArtifacts artifacts: 'yocto_usage.csv', fingerprint: true
 
             // Plot CPU
             plot csvFileName: 'yocto_cpu_plot.csv',
@@ -162,7 +160,7 @@ pipeline {
             title: 'Yocto CPU Usage',
             style: 'line',
             yaxis: 'CPU (%)',
-            csvSeries: [[file: 'metrics/yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
+            csvSeries: [[file: 'yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
 
             // Plot Memory
             plot csvFileName: 'yocto_mem_plot.csv',
@@ -170,7 +168,7 @@ pipeline {
              title: 'Yocto Memory Usage',
              style: 'line',
              yaxis: 'Memory (%)',
-             csvSeries: [[file: 'metrics/yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
+             csvSeries: [[file: 'yocto_usage.csv', inclusionFlag: 'INCLUDE_BY_COLUMN', url: '', displayTableFlag: false]]
             cleanWs()
         }
         success {
