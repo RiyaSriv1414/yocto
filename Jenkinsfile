@@ -78,7 +78,7 @@ pipeline {
                         '''
                     }
                     sh """
-                        echo "$(date),$(ps -p $$ -o %cpu=,%mem=)" >> yocto_os.csv
+                        echo "\\\$(date),\\\$(ps -p \\\$\$ -o %cpu=,%mem=)" >> yocto_os.csv
                         echo "# Setting MACHINE" >> ${BUILD_DIR}/conf/local.conf
                         echo 'MACHINE = "${MACHINE}"' >> ${BUILD_DIR}/conf/local.conf
 
