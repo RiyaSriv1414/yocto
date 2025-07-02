@@ -26,6 +26,7 @@ pipeline {
     options {
         timeout(time: 4, unit: 'HOURS')
         skipDefaultCheckout()
+        timestamps ()
     }
 
     stages {
@@ -119,7 +120,17 @@ pipeline {
                     BUILD_PID=$!
                     echo "Build PID: $BUILD_PID"
                     # Start psrecord on build PID, logging every 5 seconds
-                    /home/jenkins/.local/bin/psrecord $BUILD_PID --log metrics/yocto_usage.csv --interval 5 --include-children &
+          #          /home/jenkins/.local/bin/psrecord $BUILD_PID --log metrics/yocto_usage.csv --interval 5 --include-children &
+
+                      /home/jenkins/.local/bin/psrecord $BUILD_PID --log - --interval 5 --include-children | awk -v start="$(date +%s)" '
+                      BEGIN {
+                      print "Timestamp,Elapsed time,CPU (%),Real (MB),Virtual (MB)"
+                      }
+                      NR > 1 {
+                      now = strftime("%Y-%m-%d %H:%M:%S", start + $1)
+                      printf "%s,%.3f,%s,%s,%s\n", now, $1, $2, $3, $4
+                      }' > metrics/yocto_usage.csv &
+
                     PSRECORD_PID=$!
 
                     # Wait for the build to finish
