@@ -119,7 +119,7 @@ pipeline {
                     BUILD_PID=$!
                     echo "Build PID: $BUILD_PID"
                     # Start psrecord on build PID, logging every 5 seconds
-                    psrecord $BUILD_PID --log metrics/yocto_usage.csv --interval 5 --include-children &
+                    /home/jenkins/.local/bin/psrecord $BUILD_PID --log metrics/yocto_usage.csv --interval 5 --include-children &
                     PSRECORD_PID=$!
 
                     # Wait for the build to finish
