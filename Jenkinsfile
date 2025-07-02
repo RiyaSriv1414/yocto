@@ -102,40 +102,41 @@ pipeline {
         }
 
         stage('Build Yocto Image') {
-            steps {
-                script {
-                    echo "Starting BitBake for image: ${IMAGE}..."
-                    dir("${YOCTO_WORKSPACE}") {
-                        sh """
-                            mkdir -p metrics
-                            
-                            bash -c '
-                                pwd
-                                source oe-init-build-env 
-                                sudo chown
-                                bitbake -c cleansstate perl-native
-                                bitbake -c cleansstate openssl
-                                bitbake ${IMAGE}
-                            ' &
-                            BUILD_PID=\$!
-                            echo "Build PID: $BUILD_PID"
-                             # Start psrecord on build PID, logging every 5 seconds
-                            psrecord \$BUILD_PID --log metrics/yocto_usage.csv --interval 5 --include-children &
-                            PSRECORD_PID=\$!
+    steps {
+        script {
+            echo "Starting BitBake for image: ${IMAGE}..."
+            dir("${YOCTO_WORKSPACE}") {
+                sh """
+                    mkdir -p metrics
 
-                            # Wait for the build to finish
-                            wait \$BUILD_PID
+                    bash -c '
+                        pwd
+                        source oe-init-build-env 
+                        sudo chown -R \$USER:\$USER .
+                        bitbake -c cleansstate perl-native
+                        bitbake -c cleansstate openssl
+                        bitbake \${IMAGE}
+                    ' &
+                    BUILD_PID=\\\$!
+                    echo "Build PID: \\$BUILD_PID"
+                    # Start psrecord on build PID, logging every 5 seconds
+                    psrecord \\$BUILD_PID --log metrics/yocto_usage.csv --interval 5 --include-children &
+                    PSRECORD_PID=\\\$!
 
-                            # After build ends, stop psrecord
-                            kill \$PSRECORD_PID || true
+                    # Wait for the build to finish
+                    wait \\$BUILD_PID
 
-                            echo "Build complete. Metrics saved to metrics/yocto_usage.csv"
-                            mv metrics/yocto_usage.csv \${WORKSPACE}/yocto_usage.csv
-                        """
-                    }
-                }
+                    # After build ends, stop psrecord
+                    kill \\$PSRECORD_PID || true
+
+                    echo "Build complete. Metrics saved to metrics/yocto_usage.csv"
+                    mv metrics/yocto_usage.csv \${WORKSPACE}/yocto_usage.csv
+                """
             }
         }
+    }
+}
+
 
         // stage('Archive Build Artifacts') {
         //     steps {
